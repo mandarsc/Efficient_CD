@@ -15,6 +15,7 @@ num_vars <- ncol(disc_data)
 bn_amat <- amat(bn)
 colnames(bn_amat) <- row.names(bn_amat) <- 1:num_vars
 bn_graph <- igraph.to.graphNEL(graph_from_adjacency_matrix(bn_amat, mode="directed"))
+unique_vals <- NULL
 unique_vals <- apply(disc_data, 2, function(x) length(unique(x)))
 
 # Get top-K associated variables and refine them
@@ -33,7 +34,7 @@ G_gk <- top_k_list[[2]]
 # skel_cv <- buildCausalGraph(alarm_data, top_k_cv)
 # skel_gk <- buildCausalGraph(alarm_data, top_k_gk)
 
-pc_obj <- getPC(disc_data, top_k_cv, G_cv)
+pc_obj <- getPC(disc_data, top_k_cv, G_cv, unique_vals)
 G_cv <- pc_obj[[1]]
 new_top_k_cv <- pc_obj[[2]]
 
@@ -43,16 +44,18 @@ cv_amat <- matrix(0, num_vars, num_vars)
 cv_amat[idx] <- 1
 cv_graph <- igraph.to.graphNEL(graph_from_adjacency_matrix(cv_amat, mode="undirected"))
 
-compareGraphs(cv_graph, dag[[1]])
-
-pc_obj <- getPC(alarm_data, top_k_gk, G_gk)
+pc_obj <- getPC(disc_data, top_k_gk, G_gk, unique_vals)
 G_gk <- pc_obj[[1]]
 new_top_k_gk <- pc_obj[[2]]
+
 G_skel_gk <- mergeTopk(new_top_k_gk)
 idx <- which(G_skel_gk==TRUE)
 gk_amat <- matrix(0, num_vars, num_vars)
 gk_amat[idx] <- 1
 gk_graph <- igraph.to.graphNEL(graph_from_adjacency_matrix(gk_amat, mode="undirected"))
+
+compareGraphs(cv_graph, dag[[1]])
+compareGraphs(gk_graph, dag[[1]])
 
 pc_obj[[j]] <- pc(suffStat=list(dm=data[[j]], nlev=unique_vals, adaptDF=FALSE), indepTest=disCItest, alpha=alpha, p=ncol(data[[j]]), skel.method="original", verbose=F)
 pc_stable_obj[[j]] <- pc(suffStat=list(dm=data[[j]], nlev=unique_vals, adaptDF=FALSE), indepTest=disCItest, alpha=alpha, p=ncol(data[[j]]), skel.method="stable", verbose=F)
